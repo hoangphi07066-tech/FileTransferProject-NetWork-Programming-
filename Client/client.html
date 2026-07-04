@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Truyền Tải File Đa Nền Tảng - Multi User</title>
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b; /* Thêm màu cảnh báo cho comment */
+        }
+
+        body {
+            font-family: '-apple-system', BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0; 
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- THANH ĐIỀU HƯỚNG TOPBAR --- */
+        .topbar {
+            background-color: var(--card-bg);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--primary);
+        }
+
+        .user-avatar {
+            width: 35px;
+            height: 35px;
+            background-color: #e0e7ff;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .btn-logout {
+            background: transparent;
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 6px 15px;
+            border-radius: 6px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-logout:hover {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* --- BỐ CỤC CHÍNH --- */
+        .dashboard {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 15px 20px 15px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1e1b4b;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 12px;
+        }
+
+        /* --- VÙNG TẢI FILE TỐI ƯU --- */
+        .drop-zone {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8fafc;
+            transition: all 0.3s ease;
+            min-height: 120px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .drop-zone:active { background-color: #f1f5f9; }
+        .drop-zone.drag-over { border-color: var(--primary); background-color: #eff6ff; }
+        .drop-zone svg { width: 48px; height: 48px; color: var(--primary); opacity: 0.8; margin-bottom: 15px; }
+        .drop-zone p { margin: 0; font-size: 1rem; color: var(--text-main); }
+        .drop-zone span { color: var(--primary); font-weight: 600; margin-top: 5px; display: block; }
+        #fileInput { display: none; }
+
+        /* --- THANH TIẾN TRÌNH --- */
+        .progress-container { margin-top: 20px; display: none; }
+        .progress-info { display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 8px; }
+        .progress-bar-wrapper { background: #e2e8f0; border-radius: 8px; height: 10px; overflow: hidden; }
+        .progress-bar { background: linear-gradient(90deg, var(--primary), #818cf8); width: 0%; height: 100%; transition: width 0.2s ease; }
+
+        /* --- LỊCH SỬ & ACCORDION --- */
+        .date-group { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 15px; overflow: hidden; background: white; }
+        .date-header { 
+            background: #f8fafc; padding: 16px 20px; font-weight: 600; display: flex; 
+            justify-content: space-between; align-items: center; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .date-header:active { background: #f1f5f9; }
+        .date-content { display: block; }
+        .date-content.collapsed { display: none; }
+        .toggle-icon { font-size: 14px; color: var(--text-muted); transition: transform 0.3s ease; }
+
+        /* --- BẢNG ĐÁP ỨNG --- */
+        .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .file-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; min-width: 600px; }
+        .file-table th { background: white; color: var(--text-muted); padding: 14px 20px; font-weight: 600; border-bottom: 1px solid var(--border); }
+        .file-table td { padding: 14px 20px; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
+        
+        /* CSS cho tên file và comment */
+        .file-title { display: block; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        .file-comment { display: block; font-size: 0.8rem; color: #d97706; font-style: italic; margin-top: 6px; line-height: 1.4; white-space: normal; max-width: 250px; background: #fffbeb; padding: 4px 8px; border-radius: 4px; border-left: 2px solid var(--warning); }
+
+        /* --- BADGE & NÚT BẤM BẢNG --- */
+        .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; white-space: nowrap; }
+        .badge-success { background-color: #d1fae5; color: #065f46; }
+        .badge-revoked { background-color: #fee2e2; color: #991b1b; }
+        .badge-warning { background-color: #fef3c7; color: #b45309; }
+        .badge-info { background-color: #e0f2fe; color: #0369a1; }
+
+        .btn-action { background: transparent; padding: 8px 16px; border-radius: 8px; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .btn-revoke { color: var(--danger); border: 1px solid #fca5a5; }
+        .btn-revoke:hover, .btn-revoke:active { background: var(--danger); color: white; border-color: var(--danger); }
+        .btn-disabled { background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0; cursor: not-allowed; }
+
+        .empty-state { text-align: center; color: var(--text-muted); padding: 40px 20px; }
+
+        /* --- THÍCH ỨNG MOBILE --- */
+        @media (max-width: 600px) {
+            .topbar { padding: 12px 15px; }
+            .user-info { font-size: 0.9rem; }
+            .dashboard { padding: 0 10px 10px 10px; }
+            .card { padding: 15px; }
+            .drop-zone { padding: 30px 10px; }
+            .date-header { padding: 14px 15px; font-size: 0.9rem; }
+            .file-comment { max-width: 200px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">U</div>
+            <span id="userNameDisplay">Đang tải...</span>
+        </div>
+        <button class="btn-logout" onclick="handleLogout()">Đăng xuất</button>
+    </div>
+
+    <div class="dashboard">
+        <div class="card">
+            <h2>📤 Tải Lên</h2>
+            <div class="drop-zone" id="dropZone">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+                <p>Chạm để chọn file</p>
+                <span>hoặc kéo thả tệp vào đây</span>
+                <input type="file" id="fileInput">
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-info">
+                    <span id="fileNameProgress" style="font-weight: 500;">processing...</span>
+                    <span id="percentProgress">0%</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                    <div class="progress-bar" id="progressBar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📜 Lịch Sử</h2>
+            <div id="historyContainer">
+                <div class="empty-state">Đang tải lịch sử dữ liệu...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. Lấy thông tin tài khoản từ URL Parameter (Ví dụ: client.html?user=john)
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentUser = urlParams.get('user');
+        
+        // Nếu không có tên đăng nhập (truy cập trực tiếp), ép về trang login
+        if (!currentUser || currentUser.trim() === '') {
+            // Thay đổi đường dẫn này nếu trang login của bạn tên khác
+            window.location.href = 'login.html'; 
+        }
+
+        // 2. Cập nhật giao diện tài khoản trên Topbar
+        document.getElementById('userNameDisplay').textContent = currentUser;
+        document.getElementById('userAvatar').textContent = currentUser.charAt(0).toUpperCase();
+
+        // Xử lý nút Đăng xuất
+        function handleLogout() {
+            if(confirm('Bạn có chắc chắn muốn đăng xuất?')) {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // --- CÁC BIẾN VÀ SỰ KIỆN KÉO THẢ ---
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const percentProgress = document.getElementById('percentProgress');
+        const fileNameProgress = document.getElementById('fileNameProgress');
+
+        const collapsedGroups = {};
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) handleUpload(e.dataTransfer.files[0]);
+        });
+        
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) handleUpload(fileInput.files[0]);
+            fileInput.value = ''; 
+        });
+
+        // --- XỬ LÝ UPLOAD KÈM THEO USERNAME ---
+        async function handleUpload(file) {
+            progressContainer.style.display = 'block';
+            fileNameProgress.textContent = file.name;
+            progressBar.style.width = '0%';
+            percentProgress.textContent = '0%';
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('username', currentUser); // Bổ định danh tài khoản gửi lên Server
+
+            try {
+                let virtualProgress = 10;
+                let interval = setInterval(() => {
+                    if (virtualProgress < 90) {
+                        virtualProgress += 5;
+                        progressBar.style.width = virtualProgress + '%';
+                        percentProgress.textContent = virtualProgress + '%';
+                    }
+                }, 200);
+
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                clearInterval(interval);
+
+                if(res.ok) {
+                    progressBar.style.width = '100%';
+                    progressBar.style.background = 'linear-gradient(90deg, #10b981, #34d399)';
+                    percentProgress.textContent = '100% ✅';
+                    setTimeout(() => { progressContainer.style.display = 'none'; progressBar.style.background = ''; }, 2500);
+                    fetchHistory();
+                } else {
+                    // Server mất kết nối hoặc lỗi khác: hiển trạng thái và load lịch sử ngay
+                    progressBar.style.width = '100%';
+                    progressBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
+                    percentProgress.textContent = '⚠️ Mất kết nối';
+                    setTimeout(() => { progressContainer.style.display = 'none'; progressBar.style.background = ''; }, 3000);
+                    fetchHistory(); // ✔ Quan trọng: load lịch sử để hiện nút Tiếp tục
+                }
+            } catch {
+                clearInterval(interval);
+                progressBar.style.width = '100%';
+                progressBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
+                percentProgress.textContent = '⚠️ Mất kết nối Server';
+                setTimeout(() => { progressContainer.style.display = 'none'; progressBar.style.background = ''; }, 3000);
+                fetchHistory(); // ✔ Quan trọng: load lịch sử để hiện nút Tiếp tục
+            }
+        }
+
+        // --- LẤY LỊCH SỬ THEO USERNAME ---
+        async function fetchHistory() {
+            try {
+                const res = await fetch(`/api/history?user=${encodeURIComponent(currentUser)}`);
+                const items = await res.json();
+                renderHistory(items);
+            } catch {
+                document.getElementById('historyContainer').innerHTML = '<div class="empty-state">Lỗi tải lịch sử.</div>';
+            }
+        }
+
+        function renderHistory(items) {
+            const container = document.getElementById('historyContainer');
+            container.innerHTML = '';
+
+            if (items.length === 0) {
+                container.innerHTML = '<div class="empty-state">Bạn chưa tải lên tệp nào.</div>';
+                return;
+            }
+
+            const groups = {};
+            items.forEach(item => {
+                const dateStr = item.uploadTime.split('T')[0];
+                if (!groups[dateStr]) groups[dateStr] = [];
+                groups[dateStr].push(item);
+            });
+
+            const sortedDates = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+            sortedDates.forEach(date => {
+                const files = groups[date];
+                const isCollapsed = collapsedGroups[date] === true;
+
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'date-group';
+
+                const dateParts = date.split('-');
+                const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+
+                const header = document.createElement('div');
+                header.className = 'date-header';
+                header.innerHTML = `
+                    <span>📅 ${formattedDate} (${files.length} tệp)</span>
+                    <span class="toggle-icon" style="transform: ${isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)'}">${isCollapsed ? '▶' : '▼'}</span>
+                `;
+                header.onclick = () => {
+                    collapsedGroups[date] = !isCollapsed;
+                    renderHistory(items); 
+                };
+
+                const content = document.createElement('div');
+                content.className = `date-content ${isCollapsed ? 'collapsed' : ''}`;
+
+                let tableHtml = `
+                    <div class="table-responsive">
+                        <table class="file-table">
+                            <thead>
+                                <tr>
+                                    <th>Tên tập tin</th>
+                                    <th>Dung lượng</th>
+                                    <th>Giờ tải</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                files.forEach(f => {
+                    const timeStr = new Date(f.uploadTime).toLocaleTimeString('vi-VN', {year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    let badgeClass = 'badge-success';
+                    if (f.status === 'Đã thu hồi') badgeClass = 'badge-revoked';
+                    else if (f.status === 'Tạm dừng' || f.status === 'Mất kết nối') badgeClass = 'badge-warning';
+                    else if (f.status === 'Đang tải') badgeClass = 'badge-info';
+
+                    let actionButton = '';
+                    if (f.status === 'Thành công') {
+                        actionButton = `<button class="btn-action btn-revoke" onclick="revokeFile('${f.id}', event)">Thu hồi</button>`;
+                    } else if (f.status === 'Đang tải') {
+                        actionButton = `<button class="btn-action btn-revoke" style="border-color:#f59e0b; color:#d97706" onclick="pauseFile('${f.id}', event)">Tạm dừng</button>`;
+                    } else if (f.status === 'Tạm dừng' || f.status === 'Mất kết nối') {
+                        actionButton = `<button class="btn-action btn-revoke" style="border-color:#10b981; color:#059669" onclick="resumeFile('${f.id}', event)">Tiếp tục</button>`;
+                    } else {
+                        actionButton = `<button class="btn-action btn-disabled" disabled>Đã hủy</button>`;
+                    }
+
+                    // Kiểm tra và hiển thị comment nếu có
+                    const commentHtml = f.comment && f.comment.trim() !== "" 
+                        ? `<span class="file-comment">↳ Admin: ${f.comment}</span>` 
+                        : '';
+
+                    tableHtml += `
+                        <tr>
+                            <td title="${f.fileName}">
+                                <span class="file-title">📄 ${f.fileName}</span>
+                                ${commentHtml}
+                            </td>
+                            <td>${formatBytes(f.fileSize)}</td>
+                            <td>${timeStr}</td>
+                            <td><span class="badge ${badgeClass}">${f.status}</span></td>
+                            <td>${actionButton}</td>
+                        </tr>
+                    `;
+                });
+
+                tableHtml += `</tbody></table></div>`;
+                content.innerHTML = tableHtml;
+
+                groupDiv.appendChild(header);
+                groupDiv.appendChild(content);
+                container.appendChild(groupDiv);
+            });
+        }
+
+        // --- GỬI LỆNH THU HỒI KÈM USERNAME ---
+        async function revokeFile(id, event) {
+            event.stopPropagation();
+            if(!confirm('Xác nhận thu hồi? Hành động này sẽ xóa vĩnh viễn file trên Server.')) return;
+
+            try {
+                const res = await fetch('/api/revoke', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, id: id }) // Gửi ID và tên tài khoản
+                });
+                if(res.ok) {
+                    fetchHistory();
+                } else {
+                    alert('Lỗi yêu cầu thu hồi!');
+                }
+            } catch {
+                alert('Mất kết nối mạng.');
+            }
+        }
+
+        async function pauseFile(id, event) {
+            event.stopPropagation();
+            try {
+                const res = await fetch('/api/pause', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, id: id })
+                });
+                if(res.ok) fetchHistory();
+            } catch {
+                alert('Lỗi gửi lệnh Tạm dừng.');
+            }
+        }
+
+        async function resumeFile(id, event) {
+            event.stopPropagation();
+            try {
+                const res = await fetch('/api/resume', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, id: id })
+                });
+                if(res.ok) fetchHistory();
+                else alert('Tệp tạm đã bị xóa khỏi hệ thống, không thể tiếp tục!');
+            } catch {
+                alert('Lỗi gửi lệnh Tiếp tục.');
+            }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Khởi động lấy lịch sử khi trang vừa tải
+        window.onload = fetchHistory;
+    </script>
+</body>
+</html>

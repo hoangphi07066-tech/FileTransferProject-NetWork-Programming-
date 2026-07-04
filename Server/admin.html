@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Quản Trị Hệ Thống File</title>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* --- TOPBAR --- */
+        .topbar {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand { font-size: 1.2rem; font-weight: bold; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+        
+        .admin-profile { display: flex; align-items: center; gap: 15px; }
+        .admin-info { text-align: right; }
+        .admin-name { font-weight: 600; font-size: 0.95rem; }
+        .admin-role { font-size: 0.75rem; color: var(--text-muted); }
+        .avatar { width: 40px; height: 40px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        
+        .btn { padding: 8px 16px; border-radius: 6px; border: none; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-outline-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+        .btn-outline-danger:hover { background: var(--danger); color: white; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); color: white; }
+
+        /* --- DASHBOARD LAYOUT --- */
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+
+        /* --- STATS CARDS --- */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: var(--bg-card); padding: 20px; border-radius: 12px; border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; }
+        .stat-icon { width: 50px; height: 50px; border-radius: 10px; background: rgba(59, 130, 246, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .stat-details h3 { font-size: 1.5rem; margin-bottom: 5px; }
+        .stat-details p { color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* --- CLIENT ACCORDION --- */
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        .client-group { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 15px; overflow: hidden; }
+        .client-header { padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(255,255,255,0.02); transition: 0.2s; }
+        .client-header:hover { background: rgba(255,255,255,0.05); }
+        .client-title { font-weight: 600; font-size: 1.1rem; display: flex; align-items: center; gap: 10px; }
+        .client-meta { font-size: 0.85rem; color: var(--text-muted); }
+        
+        .client-content { display: none; border-top: 1px solid var(--border); }
+        .client-content.active { display: block; }
+
+        /* --- TABLE --- */
+        .table-responsive { width: 100%; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9rem; }
+        th { padding: 12px 20px; color: var(--text-muted); font-weight: 600; background: rgba(0,0,0,0.2); border-bottom: 1px solid var(--border); }
+        td { padding: 15px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+
+        .action-group { display: flex; gap: 8px; }
+        .btn-icon { background: transparent; border: 1px solid var(--border); color: var(--text-main); padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .btn-icon:hover { background: var(--border); }
+        
+        .comment-text { font-size: 0.85rem; color: var(--warning); font-style: italic; margin-top: 5px; display: block; }
+
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 100; }
+        .modal { background: var(--bg-card); padding: 25px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border); }
+        .modal h3 { margin-bottom: 15px; font-size: 1.2rem; }
+        .modal textarea { width: 100%; height: 100px; background: var(--bg-dark); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 6px; margin-bottom: 15px; resize: none; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <header class="topbar">
+        <div class="brand">
+            📁 Kho Dữ Liệu Server 
+            <span style="font-size: 0.7rem; background: var(--border); padding: 2px 6px; border-radius: 4px;">Port 5001</span>
+        </div>
+        <div class="admin-profile">
+            <div class="admin-info">
+                <div class="admin-name" id="adminName">Admin</div>
+                <div class="admin-role">System Manager</div>
+            </div>
+            <div class="avatar">SA</div>
+            <button class="btn btn-outline-danger" onclick="logout()">Đăng xuất</button>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-details">
+                    <h3 id="totalClients">0</h3>
+                    <p>Client Đang Lưu Trữ</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">📄</div>
+                <div class="stat-details">
+                    <h3 id="totalFiles">0</h3>
+                    <p>Tổng Số File</p>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">💾</div>
+                <div class="stat-details">
+                    <h3 id="totalSize">0 MB</h3>
+                    <p>Tổng Dung Lượng</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-header">
+            <h2>Lịch Sử Dữ Liệu Các Client</h2>
+            <button class="btn btn-primary" onclick="loadData()">🔄 Làm mới hệ thống</button>
+        </div>
+
+        <div id="clientContainer">
+            </div>
+    </div>
+
+    <div class="modal-overlay" id="commentModal">
+        <div class="modal">
+            <h3>Phản hồi Client: <span id="modalClientName" style="color: var(--primary);"></span></h3>
+            <p style="font-size: 0.85rem; margin-bottom: 10px; color: var(--text-muted);">File: <span id="modalFileName"></span></p>
+            <input type="hidden" id="modalFileId">
+            <textarea id="commentInput" placeholder="Nhập nội dung phản hồi hiển thị cho Client..."></textarea>
+            <div class="modal-actions">
+                <button class="btn btn-icon" onclick="closeModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="saveComment()">Gửi phản hồi</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CẤU HÌNH DỮ LIỆU MẪU ĐỂ TEST UI (Tắt khi Server Code đã hoàn thiện) ---
+        const USE_MOCK_DATA = false; 
+
+        let globalData = [];
+        let currentEditingFile = null;
+
+        function logout() {
+            if(confirm('Đăng xuất khỏi phiên quản trị?')) {
+                window.location.href = 'login.html'; // Đổi theo route login của bạn
+            }
+        }
+
+        async function loadData() {
+            const container = document.getElementById('clientContainer');
+            container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 40px;">Đang tải dữ liệu hệ thống...</p>';
+
+            try {
+                if (USE_MOCK_DATA) {
+                    // Dữ liệu giả lập
+                    await new Promise(r => setTimeout(r, 500));
+                    globalData = [
+                        {
+                            clientName: "JohnDoe_PC",
+                            files: [
+                                { id: "f1", name: "Bao_cao_Tai_chinh_Q3.pdf", size: 2560000, uploadTime: "2026-07-04T10:30:00", status: "Hoàn tất", comment: "Bản nháp cần sửa lại trang 2." },
+                                { id: "f2", name: "logo_update.png", size: 1024000, uploadTime: "2026-07-03T15:20:00", status: "Hoàn tất", comment: "" }
+                            ]
+                        },
+                        {
+                            clientName: "Maria_Macbook",
+                            files: [
+                                { id: "f3", name: "source_code_v2.zip", size: 15728640, uploadTime: "2026-07-04T14:15:00", status: "Hoàn tất", comment: "" }
+                            ]
+                        }
+                    ];
+                } else {
+                    // CẦN API THỰC TẾ TỪ S.CS TRẢ VỀ CẤU TRÚC JSON NHƯ TRÊN
+                    const res = await fetch('/api/admin/system-data'); 
+                    globalData = await res.json();
+                }
+                
+                updateStats();
+                renderClients();
+            } catch (error) {
+                container.innerHTML = `<p style="text-align: center; color: var(--danger); padding: 40px;">Lỗi tải dữ liệu: ${error.message}</p>`;
+            }
+        }
+
+        function updateStats() {
+            let totalClients = globalData.length;
+            let totalFiles = 0;
+            let totalBytes = 0;
+
+            globalData.forEach(client => {
+                totalFiles += client.files.length;
+                client.files.forEach(f => totalBytes += f.size);
+            });
+
+            document.getElementById('totalClients').textContent = totalClients;
+            document.getElementById('totalFiles').textContent = totalFiles;
+            document.getElementById('totalSize').textContent = formatBytes(totalBytes);
+        }
+
+        function renderClients() {
+            const container = document.getElementById('clientContainer');
+            container.innerHTML = '';
+
+            if (globalData.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 40px;">Kho lưu trữ đang trống.</p>';
+                return;
+            }
+
+            globalData.forEach((client, index) => {
+                const group = document.createElement('div');
+                group.className = 'client-group';
+                
+                const clientTotalBytes = client.files.reduce((sum, f) => sum + f.size, 0);
+
+                group.innerHTML = `
+                    <div class="client-header" onclick="toggleClient(${index})">
+                        <div class="client-title">👤 ${client.clientName}</div>
+                        <div class="client-meta">${client.files.length} tệp | ${formatBytes(clientTotalBytes)}</div>
+                    </div>
+                    <div class="client-content" id="client-content-${index}">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Tên File</th>
+                                        <th>Kích thước</th>
+                                        <th>Thời gian nhận</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${client.files.map(f => `
+                                        <tr>
+                                            <td>
+                                                <div style="font-weight: 500;">${f.name}</div>
+                                                ${f.comment ? `<span class="comment-text">↳ Phản hồi: ${f.comment}</span>` : ''}
+                                            </td>
+                                            <td>${formatBytes(f.size)}</td>
+                                            <td>${new Date(f.uploadTime).toLocaleString('vi-VN')}</td>
+                                            <td><span class="badge ${f.status === 'Hoàn tất' ? 'badge-success' : 'badge-warning'}">${f.status}</span></td>
+                                            <td>
+                                                <div class="action-group">
+                                                    <button class="btn-icon" title="Xem file" onclick="viewFile('${client.clientName}', '${f.name}')">👁️</button>
+                                                    <button class="btn-icon" title="Bình luận" onclick="openCommentModal('${client.clientName}', '${f.id}', '${f.name}', '${f.comment || ''}')">💬</button>
+                                                    <button class="btn-icon" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.3);" title="Xóa file" onclick="deleteFile('${client.clientName}', '${f.id}', '${f.name}')">🗑️</button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(group);
+            });
+        }
+
+        function toggleClient(index) {
+            const content = document.getElementById(`client-content-${index}`);
+            content.classList.toggle('active');
+        }
+
+        // --- CÁC HÀM XỬ LÝ API (Cần bổ sung logic Backend) ---
+        function viewFile(clientName, fileName) {
+            // Định tuyến giả định tới đường dẫn thư mục lưu trữ tĩnh
+            window.open(`/storage/${clientName}/${fileName}`, '_blank');
+        }
+
+        async function deleteFile(clientName, fileId, fileName) {
+            if(!confirm(`Xác nhận xóa vĩnh viễn [${fileName}] của [${clientName}] khỏi Server?`)) return;
+
+            if(USE_MOCK_DATA) {
+                // Xử lý giao diện cho mock data
+                const client = globalData.find(c => c.clientName === clientName);
+                if(client) client.files = client.files.filter(f => f.id !== fileId);
+                if(client.files.length === 0) globalData = globalData.filter(c => c.clientName !== clientName);
+                updateStats(); renderClients(); alert('Đã xóa thành công (Mock UI).');
+                return;
+            }
+
+            try {
+                // Cần API backend tương ứng
+                const res = await fetch('/api/admin/delete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientName, fileId, fileName })
+                });
+                if(res.ok) loadData();
+                else alert('Lỗi xóa file trên hệ thống.');
+            } catch { alert('Mất kết nối server.'); }
+        }
+
+        // --- XỬ LÝ COMMENT ---
+        function openCommentModal(clientName, fileId, fileName, currentComment) {
+            currentEditingFile = { clientName, fileId };
+            document.getElementById('modalClientName').textContent = clientName;
+            document.getElementById('modalFileName').textContent = fileName;
+            document.getElementById('commentInput').value = currentComment;
+            document.getElementById('commentModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('commentModal').style.display = 'none';
+            currentEditingFile = null;
+        }
+
+        async function saveComment() {
+            const text = document.getElementById('commentInput').value.trim();
+            
+            if(USE_MOCK_DATA) {
+                const client = globalData.find(c => c.clientName === currentEditingFile.clientName);
+                const file = client.files.find(f => f.id === currentEditingFile.fileId);
+                file.comment = text;
+                closeModal(); renderClients();
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/comment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ clientName: currentEditingFile.clientName, fileId: currentEditingFile.fileId, comment: text })
+                });
+                if(res.ok) { closeModal(); loadData(); }
+                else alert('Lỗi lưu phản hồi.');
+            } catch { alert('Mất kết nối server.'); }
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Khởi chạy khi load trang
+        window.onload = loadData;
+    </script>
+</body>
+</html>
