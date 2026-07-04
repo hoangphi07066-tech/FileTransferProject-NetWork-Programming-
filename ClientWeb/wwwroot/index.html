@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Ứng dụng Truyền File Dung Lượng Lớn</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); width: 500px; text-align: center; }
+        h2 { color: #1c1e21; margin-top: 0; margin-bottom: 15px; font-size: 26px; }
+        .subtitle { color: #6c757d; font-size: 14px; margin-bottom: 30px; }
+        .drop-zone { border: 2px dashed #007bff; border-radius: 8px; padding: 40px 20px; background: #f8f9fa; cursor: pointer; transition: all 0.3s ease; margin-bottom: 25px; }
+        .drop-zone:hover, .drop-zone.dragover { background: #eaf3ff; border-color: #0056b3; }
+        .drop-zone p { margin: 0; color: #495057; font-size: 16px; }
+        .drop-zone .link-text { color: #007bff; font-weight: bold; }
+        .drop-zone .sub-text { font-size: 13px; margin-top: 8px; color: #adb5bd; }
+        #fileInput { display: none; }
+        #fileInfo { margin-bottom: 20px; font-size: 15px; color: #333; text-align: left; background: #e9ecef; padding: 15px 20px; border-radius: 8px; display: none; word-break: break-all; line-height: 1.6; }
+        button { background-color: #28a745; color: white; border: none; padding: 15px 20px; font-size: 18px; border-radius: 8px; cursor: pointer; width: 100%; margin-bottom: 20px; font-weight: bold; transition: background-color 0.2s; }
+        button:hover:not(:disabled) { background-color: #218838; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; opacity: 0.7; }
+        .progress-bar-container { background-color: #e9ecef; border-radius: 8px; height: 24px; width: 100%; overflow: hidden; margin-bottom: 20px; display: none; }
+        .progress-bar { background-color: #28a745; height: 100%; width: 0%; transition: width 0.2s linear; }
+        #status { font-weight: bold; color: #495057; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Ứng Dụng Truyền File Dung Lượng Lớn</h2>
+    <div class="subtitle">127.0.0.1 : 8888</div>
+    
+    <div id="dropZone" class="drop-zone" onclick="document.getElementById('fileInput').click()">
+        <p>Kéo thả file vào đây hoặc <span class="link-text">Bấm để chọn file</span></p>
+        <p class="sub-text">(Hỗ trợ truyền file trực tiếp từ mọi ổ đĩa)</p>
+    </div>
+    <input type="file" id="fileInput" onchange="handleFileSelect(this.files[0])">
+
+    <div id="fileInfo"></div>
+    
+    <button id="startBtn" onclick="startTransfer()" disabled>Bắt đầu Truyền File</button>
+
+    <div id="progressBarContainer" class="progress-bar-container">
+        <div id="progressBar" class="progress-bar"></div>
+    </div>
+    
+    <div id="status">Trạng thái: Vui lòng chọn file...</div>
+</div>
+
+<script>
+    let selectedFile = null;
+    const dropZone = document.getElementById('dropZone');
+    
+    ['dragenter', 'dragover'].forEach(eventName => { dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.classList.add('dragover'); }, false); });
+    ['dragleave', 'drop'].forEach(eventName => { dropZone.addEventListener(eventName, (e) => { e.preventDefault(); dropZone.classList.remove('dragover'); }, false); });
+    dropZone.addEventListener('drop', (e) => { handleFileSelect(e.dataTransfer.files[0]); });
+
+    function handleFileSelect(file) {
+        if (!file) return;
+        selectedFile = file;
+        const fileInfo = document.getElementById('fileInfo');
+        fileInfo.style.display = "block";
+        fileInfo.innerHTML = `<strong>Tên file:</strong> ${file.name}<br><strong>Kích thước:</strong> ${(file.size / (1024*1024)).toFixed(2)} MB`;
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('status').innerText = "Trạng thái: Sẵn sàng truyền.";
+    }
+
+    async function startTransfer() {
+        if (!selectedFile) return;
+
+        document.getElementById('startBtn').disabled = true;
+        document.getElementById('progressBarContainer').style.display = "block";
+        
+        const chunkSize = 1024 * 1024;
+        const totalSize = selectedFile.size;
+        let offset = 0;
+
+        const sendNextChunk = async () => {
+            if (offset >= totalSize) {
+                document.getElementById('progressBar').style.width = '100%';
+                document.getElementById('status').innerText = "HOÀN THÀNH TRUYỀN FILE!";
+                document.getElementById('startBtn').disabled = false;
+                return;
+            }
+
+            const slice = selectedFile.slice(offset, offset + chunkSize);
+            
+            let formData = new FormData();
+            formData.append("fileName", selectedFile.name);
+            formData.append("totalSize", totalSize);
+            formData.append("chunkOffset", offset);
+            formData.append("chunkSize", slice.size);
+            formData.append("file", slice);
+
+            let percentage = Math.round((offset / totalSize) * 100);
+            document.getElementById('status').innerText = `Đang truyền... ${percentage}%`;
+            document.getElementById('progressBar').style.width = percentage + '%';
+
+            try {
+                let response = await fetch('/api/upload-chunk', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    let errText = await response.text();
+                    document.getElementById('status').innerText = "Lỗi Server: " + (errText || "Lỗi không xác định");
+                    document.getElementById('startBtn').disabled = false;
+                    return;
+                }
+
+                offset += chunkSize;
+                sendNextChunk();
+            } catch (err) {
+                document.getElementById('status').innerText = "Mất kết nối với ClientWeb!";
+                document.getElementById('startBtn').disabled = false;
+            }
+        };
+
+        sendNextChunk();
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Đăng Nhập Hệ Thống</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .login-card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); width: 360px; text-align: center; }
+        h2 { margin-top: 0; color: #1c1e21; margin-bottom: 25px; }
+        .form-group { text-align: left; margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #495057; font-weight: 500; }
+        input { width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        input:focus { border-color: #007bff; outline: none; }
+        button { background-color: #007bff; color: white; border: none; padding: 12px; font-size: 16px; border-radius: 6px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 15px; }
+        button:hover { background-color: #0056b3; }
+        #errorMsg { color: #dc3545; font-size: 14px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>ĐĂNG NHẬP</h2>
+    <div class="form-group">
+        <label>Tài khoản</label>
+        <input type="text" id="username" placeholder="Nhập admin hoặc client...">
+    </div>
+    <div class="form-group">
+        <label>Mật khẩu</label>
+        <input type="password" id="password" placeholder="Nhập mật khẩu...">
+    </div>
+    <button onclick="handleLogin()">Đăng Nhập</button>
+    <div id="errorMsg">Tài khoản hoặc mật khẩu không chính xác!</div>
+</div>
+
+<script>
+    async function handleLogin() {
+        const user = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+        const errorMsg = document.getElementById('errorMsg');
+
+        try {
+            let response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass })
+            });
+
+            if (response.ok) {
+                let data = await response.json();
+                // Lưu quyền vào bộ nhớ trình duyệt
+                localStorage.setItem("role", data.role);
+                localStorage.setItem("username", user);
+                
+                // Điều hướng theo quyền
+                if (data.role === "admin") {
+                    window.location.href = "/admin";
+                } else {
+                    window.location.href = "/client";
+                }
+            } else {
+                errorMsg.style.display = "block";
+            }
+        } catch (err) {
+            alert("Không thể kết nối đến máy chủ C#");
+        }
+    }
+</script>
+</body>
+</html>
