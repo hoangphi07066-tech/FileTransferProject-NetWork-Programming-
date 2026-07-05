@@ -2,8 +2,8 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Truyền Tải File Đa Nền Tảng - Multi User</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0,">
+    <title>Truyền Tải File Dung Lượng Lớn</title>
     <style>
         :root {
             --primary: #4f46e5;
@@ -15,7 +15,7 @@
             --border: #e2e8f0;
             --success: #10b981;
             --danger: #ef4444;
-            --warning: #f59e0b; /* Thêm màu cảnh báo cho comment */
+            --warning: #f59e0b;
         }
 
         body {
@@ -27,7 +27,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- THANH ĐIỀU HƯỚNG TOPBAR --- */
         .topbar {
             background-color: var(--card-bg);
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
@@ -79,7 +78,7 @@
             color: white;
         }
 
-        /* --- BỐ CỤC CHÍNH --- */
+        /* Main */
         .dashboard {
             max-width: 900px;
             margin: 0 auto;
@@ -106,7 +105,7 @@
             padding-bottom: 12px;
         }
 
-        /* --- VÙNG TẢI FILE TỐI ƯU --- */
+        /* Khung tải file */
         .drop-zone {
             border: 2px dashed #cbd5e1;
             border-radius: 12px;
@@ -129,13 +128,13 @@
         .drop-zone span { color: var(--primary); font-weight: 600; margin-top: 5px; display: block; }
         #fileInput { display: none; }
 
-        /* --- THANH TIẾN TRÌNH --- */
+        /* Thanh tiến trình */
         .progress-container { margin-top: 20px; display: none; }
         .progress-info { display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 8px; }
         .progress-bar-wrapper { background: #e2e8f0; border-radius: 8px; height: 10px; overflow: hidden; }
         .progress-bar { background: linear-gradient(90deg, var(--primary), #818cf8); width: 0%; height: 100%; transition: width 0.2s ease; }
 
-        /* --- LỊCH SỬ & ACCORDION --- */
+        /* Lịch sử */
         .date-group { border: 1px solid var(--border); border-radius: 10px; margin-bottom: 15px; overflow: hidden; background: white; }
         .date-header { 
             background: #f8fafc; padding: 16px 20px; font-weight: 600; display: flex; 
@@ -147,17 +146,17 @@
         .date-content.collapsed { display: none; }
         .toggle-icon { font-size: 14px; color: var(--text-muted); transition: transform 0.3s ease; }
 
-        /* --- BẢNG ĐÁP ỨNG --- */
+        /* Check đáp ứng */
         .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .file-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; min-width: 600px; }
         .file-table th { background: white; color: var(--text-muted); padding: 14px 20px; font-weight: 600; border-bottom: 1px solid var(--border); }
         .file-table td { padding: 14px 20px; border-bottom: 1px solid #f8fafc; vertical-align: middle; }
         
-        /* CSS cho tên file và comment */
+        /* Tên file và comment */
         .file-title { display: block; max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
         .file-comment { display: block; font-size: 0.8rem; color: #d97706; font-style: italic; margin-top: 6px; line-height: 1.4; white-space: normal; max-width: 250px; background: #fffbeb; padding: 4px 8px; border-radius: 4px; border-left: 2px solid var(--warning); }
 
-        /* --- BADGE & NÚT BẤM BẢNG --- */
+        /* Nút bấm bảng */
         .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; display: inline-block; white-space: nowrap; }
         .badge-success { background-color: #d1fae5; color: #065f46; }
         .badge-revoked { background-color: #fee2e2; color: #991b1b; }
@@ -171,7 +170,7 @@
 
         .empty-state { text-align: center; color: var(--text-muted); padding: 40px 20px; }
 
-        /* --- THÍCH ỨNG MOBILE --- */
+        /* Đt */
         @media (max-width: 600px) {
             .topbar { padding: 12px 15px; }
             .user-info { font-size: 0.9rem; }
@@ -225,28 +224,27 @@
     </div>
 
     <script>
-        // 1. Lấy thông tin tài khoản từ URL Parameter (Ví dụ: client.html?user=john)
+        // Lấy tên lên URL
         const urlParams = new URLSearchParams(window.location.search);
         let currentUser = urlParams.get('user');
         
-        // Nếu không có tên đăng nhập (truy cập trực tiếp), ép về trang login
-        if (!currentUser || currentUser.trim() === '') {
-            // Thay đổi đường dẫn này nếu trang login của bạn tên khác
+        // Ko tên thì đăng nhập lại
+            if (!currentUser || currentUser.trim() === '') {
             window.location.href = 'login.html'; 
         }
 
-        // 2. Cập nhật giao diện tài khoản trên Topbar
+        // Giao diện tài khoảnr
         document.getElementById('userNameDisplay').textContent = currentUser;
         document.getElementById('userAvatar').textContent = currentUser.charAt(0).toUpperCase();
 
-        // Xử lý nút Đăng xuất
+        // Nút đăng xuất
         function handleLogout() {
             if(confirm('Bạn có chắc chắn muốn đăng xuất?')) {
                 window.location.href = 'login.html';
             }
         }
 
-        // --- CÁC BIẾN VÀ SỰ KIỆN KÉO THẢ ---
+        // Kéo thả nè
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
         const progressContainer = document.getElementById('progressContainer');
@@ -270,7 +268,7 @@
             fileInput.value = ''; 
         });
 
-        // --- XỬ LÝ UPLOAD KÈM THEO USERNAME ---
+        // Upload kèm tên
         async function handleUpload(file) {
             progressContainer.style.display = 'block';
             fileNameProgress.textContent = file.name;
@@ -279,7 +277,7 @@
 
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('username', currentUser); // Bổ định danh tài khoản gửi lên Server
+            formData.append('username', currentUser); //  Tên tài khoản gửi lên Server
 
             try {
                 let virtualProgress = 10;
@@ -301,12 +299,12 @@
                     setTimeout(() => { progressContainer.style.display = 'none'; progressBar.style.background = ''; }, 2500);
                     fetchHistory();
                 } else {
-                    // Server mất kết nối hoặc lỗi khác: hiển trạng thái và load lịch sử ngay
+                    // Server mất kết nối hoặc lỗi 
                     progressBar.style.width = '100%';
                     progressBar.style.background = 'linear-gradient(90deg, #f59e0b, #fbbf24)';
                     percentProgress.textContent = '⚠️ Mất kết nối';
                     setTimeout(() => { progressContainer.style.display = 'none'; progressBar.style.background = ''; }, 3000);
-                    fetchHistory(); // ✔ Quan trọng: load lịch sử để hiện nút Tiếp tục
+                    fetchHistory(); // Load lịch sử để hiện nút Tiếp tục
                 }
             } catch {
                 clearInterval(interval);
@@ -314,11 +312,11 @@
                 progressBar.style.background = 'linear-gradient(90deg, #ef4444, #f87171)';
                 percentProgress.textContent = '⚠️ Mất kết nối Server';
                 setTimeout(() => { progressContainer.style.display = 'none'; progressBar.style.background = ''; }, 3000);
-                fetchHistory(); // ✔ Quan trọng: load lịch sử để hiện nút Tiếp tục
+                fetchHistory(); // Load lịch sử để hiện nút Tiếp tục
             }
         }
 
-        // --- LẤY LỊCH SỬ THEO USERNAME ---
+        // Lịch sử tải lên
         async function fetchHistory() {
             try {
                 const res = await fetch(`/api/history?user=${encodeURIComponent(currentUser)}`);
@@ -432,7 +430,7 @@
             });
         }
 
-        // --- GỬI LỆNH THU HỒI KÈM USERNAME ---
+        // Thu hồi, tạm dừng và tiếp tục
         async function revokeFile(id, event) {
             event.stopPropagation();
             if(!confirm('Xác nhận thu hồi? Hành động này sẽ xóa vĩnh viễn file trên Server.')) return;
@@ -490,7 +488,7 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        // Khởi động lấy lịch sử khi trang vừa tải
+        // Load lịch sử khi trang được tải
         window.onload = fetchHistory;
     </script>
 </body>

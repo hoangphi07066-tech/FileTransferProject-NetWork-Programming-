@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net.Sockets;
-using System.Text.Json; // Thêm thư viện xử lý JSON
+using System.Text.Json;
 using Microsoft.AspNetCore.Http.Features; 
 using Library;
 using System.Security.Cryptography;
@@ -19,7 +19,7 @@ builder.Services.Configure<FormOptions>(options =>
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
 
-// Thêm HttpClient để có thể gọi sang API của Server Admin
+// HttpClient gọi sang API của Server Admin
 builder.Services.AddHttpClient(); 
 
 builder.Services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
@@ -38,27 +38,24 @@ app.MapGet("/client.html", () => {
 app.MapGet("/api/check-progress", async (string user, string filename, IHttpClientFactory httpClientFactory) => {
     try {
         var client = httpClientFactory.CreateClient();
-        client.Timeout = TimeSpan.FromSeconds(3); // Giới hạn thời gian đợi 3 giây
-        var response = await client.GetFromJsonAsync<JsonElement>($"http://127.0.0.1:5001/api/admin/check-file-size?username={user}&filename={filename}");
+        client.Timeout = TimeSpan.FromSeconds(5); // Giới hạn đợi 5 giây
+        var response = await client.GetFromJsonAsync<JsonElement>($"http://127.0.0.1:5001/api/admin/check-file-size?username={user}&filename={filename}"); //===============================================================================================
         return Results.Ok(response);
     } catch {
-        // QUAN TRỌNG: Trả về lỗi 503 (Dịch vụ gián đoạn) để Client biết Server đang chết
         return Results.Problem("Server lưu trữ đang ngoại tuyến", statusCode: 503);
     }
 });
 
-// --- SỬA ĐỔI API HISTORY: ĐỒNG BỘ COMMENT TỪ SERVER (S.CS) ---
+// ĐỒNG BỘ COMMENT TỪ SERVER ADMIN VỀ CLIENT
 app.MapGet("/api/history", async (string user, IHttpClientFactory httpClientFactory) => {
     string username = user ?? "Khách";
     var history = multiClientHistory.GetValueOrDefault(username, new List<UploadHistoryItem>());
-    var updatedHistory = history.ToList(); // Tạo bản sao để an toàn khi chỉnh sửa
+    var updatedHistory = history.ToList();
 
     try 
     {
-        // Gọi sang Server Trung tâm (port 5001) để lấy trạng thái và comment
         var client = httpClientFactory.CreateClient();
-        var response = await client.GetFromJsonAsync<JsonElement>("http://127.0.0.1:5001/api/admin/system-data");
-        
+        var response = await client.GetFromJsonAsync<JsonElement>("http://127.0.0.1:5001/api/admin/system-data"); //===============================================================================================
         foreach (var clientData in response.EnumerateArray()) 
         {
             if (clientData.GetProperty("clientName").GetString() == username) 
@@ -66,7 +63,7 @@ app.MapGet("/api/history", async (string user, IHttpClientFactory httpClientFact
                 var files = clientData.GetProperty("files").EnumerateArray();
                 for (int i = 0; i < updatedHistory.Count; i++) 
                 {
-                    // Ghép cặp file theo tên
+                    // Ghép cặp file theo tên client
                     var matchedFile = files.FirstOrDefault(x => x.GetProperty("name").GetString() == updatedHistory[i].FileName);
                     if (matchedFile.ValueKind != JsonValueKind.Undefined) 
                     {
@@ -76,7 +73,7 @@ app.MapGet("/api/history", async (string user, IHttpClientFactory httpClientFact
                     }
                 }
                 
-                // Lưu ngược bản cập nhật vào bộ nhớ cache
+                // Lưu bản cập nhật vào bộ nhớ cache
                 multiClientHistory[username] = updatedHistory;
                 break;
             }
@@ -84,7 +81,7 @@ app.MapGet("/api/history", async (string user, IHttpClientFactory httpClientFact
     } 
     catch 
     {
-        // Nếu Server Admin chưa bật hoặc mất kết nối, vẫn trả về lịch sử cũ để không làm lỗi app
+        // Nếu Server chưa bật hoặc mất kết nối, vẫn trả về lịch sử cũ
     }
     
     return Results.Ok(updatedHistory);
@@ -101,7 +98,6 @@ app.MapPost("/api/upload", async (HttpContext context) => {
     using (var stream = new FileStream(tempPath, FileMode.Create)) {
         await file.CopyToAsync(stream);
     }
-
     string fileHashString = "";
     using (var sha256 = SHA256.Create())
     using (var hashStream = new FileStream(tempPath, FileMode.Open, FileAccess.Read))
@@ -109,36 +105,28 @@ app.MapPost("/api/upload", async (HttpContext context) => {
         byte[] hashBytes = sha256.ComputeHash(hashStream);
         fileHashString = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
     }
-
     string uploadId = Guid.NewGuid().ToString();
     var userHistory = multiClientHistory.GetOrAdd(username, _ => new List<UploadHistoryItem>());
     userHistory.Add(new UploadHistoryItem(uploadId, file.FileName, file.Length, DateTime.Now, "Đang tải", "", tempPath));
-
     var cts = new CancellationTokenSource();
     activeUploads[uploadId] = cts;
-
     try
     {
         using TcpClient socketClient = new(serverIp, 11000);
         using var networkStream = socketClient.GetStream();
-
         long totalSize = file.Length;
         int chunkIndex = 0;
         long bytesSent = 0;
-
         using var fs = new FileStream(tempPath, FileMode.Open, FileAccess.Read);
         int bufferSize = 81920;
         byte[] buffer = new byte[bufferSize];
         int bytesRead;
-
         while ((bytesRead = await fs.ReadAsync(buffer, 0, buffer.Length, cts.Token)) > 0)
         {
             bytesSent += bytesRead;
             bool isLastChunk = (bytesSent >= totalSize);
-
             byte[] actualData = new byte[bytesRead];
             Array.Copy(buffer, actualData, bytesRead);
-
             var packet = new TransferPacket
             {
                 Username = username,
@@ -157,7 +145,6 @@ app.MapPost("/api/upload", async (HttpContext context) => {
             await networkStream.WriteAsync(serializedPacket, cts.Token);
             await networkStream.FlushAsync(cts.Token);
         }
-
         activeUploads.TryRemove(uploadId, out _);
         int idxOk = userHistory.FindIndex(x => x.Id == uploadId);
         if (idxOk >= 0) userHistory[idxOk] = userHistory[idxOk] with { Status = "Thành công" };
@@ -166,21 +153,21 @@ app.MapPost("/api/upload", async (HttpContext context) => {
     }
     catch (OperationCanceledException)
     {
-        // Người dùng chủ động bấm nút Tạm dừng
+        // Nút tạm dừng
         activeUploads.TryRemove(uploadId, out _);
         int idxPause = userHistory.FindIndex(x => x.Id == uploadId);
         if (idxPause >= 0) userHistory[idxPause] = userHistory[idxPause] with { Status = "Tạm dừng" };
-        // GIỮ LẠI file tạm, không xóa
+        // Giữ file tạm
         return Results.Ok(new { message = "Upload tạm dừng." });
     }
     catch (Exception ex)
     {
-        // Server đứt kết nối đột ngột
+        // Server mất kết nối đột ngột
         Console.WriteLine($"[Client] Lỗi Socket: {ex.Message}");
         activeUploads.TryRemove(uploadId, out _);
         int idxErr = userHistory.FindIndex(x => x.Id == uploadId);
         if (idxErr >= 0) userHistory[idxErr] = userHistory[idxErr] with { Status = "Mất kết nối" };
-        // GIỮ LẠI file tạm, không xóa -> người dùng có thể Resume sau
+        // Giữ file tạm -> Resume
         return Results.Problem($"Mất kết nối tới Server: {ex.Message}");
     }
 });
@@ -332,6 +319,6 @@ app.MapPost("/api/resume", async (RevokeRequest request, IHttpClientFactory http
 
 app.Run("http://0.0.0.0:5000");
 
-// --- SỬA ĐỔI RECORD: Bổ sung thêm biến Comment ---
+
 public record UploadHistoryItem(string Id, string FileName, long FileSize, DateTime UploadTime, string Status, string Comment = "", string TempFilePath = "");
 public record RevokeRequest(string Username, string Id);

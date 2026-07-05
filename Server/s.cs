@@ -12,15 +12,15 @@ builder.Services.AddCors(options => options.AddPolicy("AllowAll", p => p.AllowAn
 var app = builder.Build();
 app.UseCors("AllowAll");
 
-// Khởi tạo thư mục lưu trữ
+// Thư mục lưu trữ
 string storagePath = Path.Combine(Directory.GetCurrentDirectory(), "storage");
 if (!Directory.Exists(storagePath)) Directory.CreateDirectory(storagePath);
 
-// --- HỆ THỐNG LƯU TRỮ BÌNH LUẬN ---
+// Lưu trữ dữ liệu bình luận
 string metadataPath = Path.Combine(storagePath, "_metadata.json");
 ConcurrentDictionary<string, string> fileComments = new();
 
-// Tải dữ liệu bình luận cũ (nếu có)
+// Tải dữ liệu bình luận cũ
 if (File.Exists(metadataPath))
 {
     try
@@ -39,21 +39,21 @@ void SaveMetadata()
 // Chạy TCP Server ở luồng nền
 _ = StartTcpServerAsync(11000, storagePath);
 
-// Cho phép truy cập file tĩnh để tính năng "Xem File (👁️)" trên Admin hoạt động
+// Truy cập tệp tĩnh từ thư mục storage
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(storagePath),
     RequestPath = "/storage"
 });
 
-// --- HTTP ENDPOINTS CHO ADMIN WEB ---
+// HTTP endpoint cho trang admin.html
 
 app.MapGet("/admin.html", () => {
     string filePath = Path.Combine(Directory.GetCurrentDirectory(), "admin.html");
     return Results.File(filePath, "text/html");
 });
 
-// 1. API: Lấy toàn bộ dữ liệu hệ thống cho Dashboard
+// API lấy toàn dữ liệu hệ thống
 app.MapGet("/api/admin/system-data", () => {
     var result = new List<object>();
     var userDirs = Directory.GetDirectories(storagePath);
@@ -62,13 +62,12 @@ app.MapGet("/api/admin/system-data", () => {
     {
         string clientName = Path.GetFileName(dir);
         var filesInfo = new List<object>();
-        
         foreach (var filePath in Directory.GetFiles(dir))
         {
             var fileInfo = new FileInfo(filePath);
             string fileName = fileInfo.Name;
             
-            // Dùng tên file làm ID. Lấy comment tương ứng nếu có.
+            // Tên file làm ID và lấy comment
             string commentKey = $"{clientName}|{fileName}";
             string comment = fileComments.TryGetValue(commentKey, out var c) ? c : "";
 
@@ -82,7 +81,7 @@ app.MapGet("/api/admin/system-data", () => {
             });
         }
         
-        // Chỉ thêm người dùng vào Dashboard nếu họ có file
+        // Nếu Client có file mới thêm vào bảng
         if (filesInfo.Count > 0)
         {
             result.Add(new {
@@ -95,7 +94,7 @@ app.MapGet("/api/admin/system-data", () => {
     return Results.Ok(result);
 });
 
-// 2. API: Xoá File từ Web Admin
+// API xóa file từ Web Admin
 app.MapPost("/api/admin/delete", (DeleteRequest req) => {
     string targetPath = Path.Combine(storagePath, req.clientName, req.fileName);
     if (File.Exists(targetPath))
@@ -112,7 +111,7 @@ app.MapPost("/api/admin/delete", (DeleteRequest req) => {
     return Results.NotFound(new { message = "Không tìm thấy file" });
 });
 
-// 3. API: Lưu bình luận từ Web Admin
+// API lưu comment từ Web Admin
 app.MapPost("/api/admin/comment", (CommentRequest req) => {
     string commentKey = $"{req.clientName}|{req.fileId}";
     fileComments[commentKey] = req.comment;
@@ -121,7 +120,7 @@ app.MapPost("/api/admin/comment", (CommentRequest req) => {
     return Results.Ok(new { message = "Lưu phản hồi thành công" });
 });
 
-// 4. API: Lấy kích thước file hiện tại (Dùng cho Resume)
+// API kiểm tra file
 app.MapGet("/api/admin/check-file", (string user, string filename) => {
     string targetPath = Path.Combine(storagePath, user, filename);
     if (File.Exists(targetPath))
@@ -131,10 +130,10 @@ app.MapGet("/api/admin/check-file", (string user, string filename) => {
     return Results.Ok(new { offset = 0 });
 });
 
-// Mở luồng cho toàn bộ mạng nội bộ
-app.Run("http://127.0.0.1:5001");
+// Mở luồng
+app.Run("http://127.0.0.1:5001"); //============================================================================================================================================
 
-// --- LOGIC TCP SERVER (Giữ nguyên của bạn) ---
+// TCP Server =============================================================================================================================================
 
 async Task StartTcpServerAsync(int port, string saveDir)
 {
@@ -191,11 +190,11 @@ async Task HandleClientAsync(TcpClient client, string saveDir)
 
             var packet = PacketHelper.Deserialize(packetBytes);
 
-                // Tạo thư mục riêng cho từng người dùng (ví dụ: storage/user1)
+                // Tạo thư mục riêng cho từng Client
                 string userDir = Path.Combine(saveDir, packet.Username);
                 if (!Directory.Exists(userDir)) Directory.CreateDirectory(userDir);
 
-                // --- XỬ LÝ LỆNH THU HỒI FILE ---
+                // Lệnh thu hồi file từ Client
                 if (packet.FileSize == -1) 
                 {
                     string targetPath = Path.Combine(userDir, packet.FileName);
@@ -207,7 +206,7 @@ async Task HandleClientAsync(TcpClient client, string saveDir)
                     break;
                 }
 
-                // --- XỬ LÝ NHẬN FILE ---
+                // Nhận file từ Client
                 if (fs == null)
                 {
                     currentFileName = packet.FileName;
@@ -232,9 +231,9 @@ async Task HandleClientAsync(TcpClient client, string saveDir)
                 {
                     Console.WriteLine($"[Server] Đã nhận xong file của [{packet.Username}]: {currentFileName}");
                     
-                    // Xác thực SHA256
+                    // Xác thực SHA256 ========================
                     fs.Close();
-                    fs = null; // Để khối finally không cần đóng lại
+                    fs = null;
                     string fullPath = Path.Combine(userDir, currentFileName);
                     
                     if (!string.IsNullOrEmpty(expectedHash))
@@ -271,7 +270,7 @@ async Task HandleClientAsync(TcpClient client, string saveDir)
     }
 }
 
-// --- CLASS MODELS ĐỂ HỨNG DỮ LIỆU TỪ WEB ADMIN ---
+// Lớp lấy dữ liệu từ Web Admin
 class DeleteRequest 
 { 
     public string clientName { get; set; } = ""; 

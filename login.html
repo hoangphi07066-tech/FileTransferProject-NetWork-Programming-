@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Đăng Nhập Tập Trung</title>
+    <title>Hệ Thống Đăng Nhập</title>
     <style>
         :root {
             --primary: #4f46e5;
@@ -28,7 +28,7 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- HIỆU ỨNG XUẤT HIỆN --- */
+        /* Hiệu ứng */
         @keyframes slideUpFade {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
@@ -46,7 +46,7 @@
             animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* --- TIÊU ĐỀ --- */
+        /* Tiêu đề */
         .header-icon {
             background: var(--primary);
             color: white;
@@ -75,7 +75,7 @@
             margin: 0 0 30px 0;
         }
 
-        /* --- Ô NHẬP LIỆU (INPUTS) --- */
+        /* ô nhập liệu */
         .input-group {
             position: relative;
             margin-bottom: 20px;
@@ -95,7 +95,7 @@
 
         input { 
             width: 100%; 
-            padding: 14px 14px 14px 42px; /* Dành chỗ cho icon bên trái */
+            padding: 14px 14px 14px 42px;
             border: 1px solid var(--border); 
             border-radius: 10px; 
             box-sizing: border-box; 
@@ -118,7 +118,7 @@
 
         input::placeholder { color: #94a3b8; }
 
-        /* --- NÚT BẤM --- */
+        /* Nút bấm */
         button { 
             background: var(--primary); 
             color: white; 
@@ -145,7 +145,7 @@
             box-shadow: none;
         }
 
-        /* --- THÔNG BÁO LỖI --- */
+        /* Thông báo lỗi */
         .error { 
             background-color: var(--error-bg);
             color: var(--error-text); 
@@ -167,7 +167,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
             </svg>
         </div>
-        <h2>File Transfer System</h2>
+        <h2>Hệ Thống Đăng Nhập Truyền Tải File</h2>
         <p class="subtitle">Đăng nhập để tiếp tục</p>
 
         <div class="input-group">
@@ -189,7 +189,7 @@
     </div>
 
     <script>
-        // Hỗ trợ nhấn Enter để đăng nhập
+        // Enter để đăng nhập
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
                 handleLogin();
@@ -204,7 +204,6 @@
             if (user === 'admin' && pass === '123') {
                 window.location.href = 'http://localhost:5001/admin.html';
             } else if (user !== '' && pass === '123') {
-                // Cho phép user1, user2, john, anna... đăng nhập
                 // Đẩy username lên URL để Client biết ai đang dùng
                 window.location.href = `http://localhost:5000/client.html?user=${encodeURIComponent(user)}`;
             } else {

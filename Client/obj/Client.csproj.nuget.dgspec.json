@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Client\\Client.csproj": {}
+    "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Client\\Client.csproj": {}
   },
   "projects": {
-    "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Client\\Client.csproj": {
+    "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Client\\Client.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Client\\Client.csproj",
+        "projectUniqueName": "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Client\\Client.csproj",
         "projectName": "Client",
-        "projectPath": "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Client\\Client.csproj",
+        "projectPath": "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Client\\Client.csproj",
         "packagesPath": "C:\\Users\\Acer\\.nuget\\packages\\",
-        "outputPath": "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Client\\obj\\",
+        "outputPath": "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Client\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "D:\\APP\\VS\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -34,8 +34,8 @@
             "framework": "net10.0",
             "targetAlias": "net10.0",
             "projectReferences": {
-              "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj": {
-                "projectPath": "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj"
+              "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj": {
+                "projectPath": "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj"
               }
             }
           }
@@ -493,14 +493,14 @@
         }
       }
     },
-    "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj": {
+    "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj",
+        "projectUniqueName": "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj",
         "projectName": "Library",
-        "projectPath": "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj",
+        "projectPath": "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Library\\Library.csproj",
         "packagesPath": "C:\\Users\\Acer\\.nuget\\packages\\",
-        "outputPath": "D:\\STUDY\\2_2\\LT_mang\\FileTransferProject-NetWork-Programming-\\Library\\obj\\",
+        "outputPath": "D:\\STUDY\\2_2\\FileTransferProject-NetWork-Programming-\\Library\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "D:\\APP\\VS\\Microsoft Visual Studio\\Shared\\NuGetPackages"
